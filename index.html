@@ -325,156 +325,459 @@
        START
        ================================================== */
 
-    async function startScanner(){
+/* ==================================================
+   START SCANNER
+   KHUSUS BARCODE 1D MAWAR JAYA
+   ================================================== */
 
-      try{
+async function startScanner(){
 
-        if(
-          typeof ZXingBrowser ===
-          "undefined"
+  try{
+
+    if(
+      typeof ZXingBrowser ===
+      "undefined"
+    ){
+
+      throw new Error(
+        "ZXing tidak berhasil dimuat."
+      );
+
+    }
+
+
+    setStatus(
+      "⏳ Menyiapkan kamera..."
+    );
+
+
+    /*
+     * Reader khusus barcode 1D
+     */
+
+    reader =
+      new ZXingBrowser
+        .BrowserMultiFormatOneDReader();
+
+
+    /*
+     * Constraint kamera
+     *
+     * Fokus continuous
+     * Resolusi tinggi
+     * Kamera belakang
+     */
+
+    const cameraConstraints = {
+
+      video:{
+
+        facingMode:{
+          ideal:
+            "environment"
+        },
+
+        width:{
+          ideal:1920
+        },
+
+        height:{
+          ideal:1080
+        },
+
+        frameRate:{
+          ideal:30,
+          max:60
+        },
+
+        focusMode:{
+          ideal:
+            "continuous"
+        }
+
+      }
+
+    };
+
+
+    /*
+     * Mulai scanner
+     */
+
+    controls =
+      await reader.decodeFromConstraints(
+
+        cameraConstraints,
+
+        "video",
+
+        function(
+          result,
+          error
         ){
 
-          throw new Error(
-            "ZXing tidak berhasil dimuat."
+          /*
+           * Tidak ada barcode
+           */
+
+          if(!result){
+
+            return;
+
+          }
+
+
+          /*
+           * Barcode berhasil dibaca
+           */
+
+          const resi =
+            result
+              .getText()
+              .trim();
+
+
+          if(!resi){
+
+            return;
+
+          }
+
+
+          console.log(
+            "BARCODE TERBACA:",
+            resi
+          );
+
+
+          /*
+           * Tampilkan hasil
+           */
+
+          showResult(
+            resi
+          );
+
+
+          setStatus(
+            "✅ Barcode berhasil dibaca."
+          );
+
+
+          /*
+           * Matikan kamera
+           */
+
+          stopCamera();
+
+
+          /*
+           * Kirim hasil ke
+           * halaman Tracking
+           */
+
+          if(
+            window.opener
+          ){
+
+            window.opener.postMessage(
+
+              {
+                type:
+                  "MAWAR_JAYA_BARCODE",
+
+                resi:
+                  resi
+
+              },
+
+              "*"
+
+            );
+
+          }
+
+
+          /*
+           * Tutup halaman scanner
+           */
+
+          setTimeout(
+            function(){
+
+              window.close();
+
+            },
+            700
           );
 
         }
 
-
-        setStatus(
-          "⏳ Meminta akses kamera..."
-        );
+      );
 
 
-        reader =
-          new ZXingBrowser.BrowserMultiFormatOneDReader();
+    setStatus(
+      "📷 Kamera aktif — arahkan barcode ke kotak."
+    );
 
 
-        controls =
-          await reader.decodeFromConstraints(
+  }
+  catch(error){
 
-            {
-              video:{
-                facingMode:{
-                  ideal:
-                    "environment"
-                }
-              }
-            },
-
-            "video",
-
-            function(
-              result,
-              error
-            ){
-
-              if(!result){
-
-                return;
-
-              }
+    console.error(
+      "SCANNER ERROR:",
+      error
+    );
 
 
-              const resi =
-                result
-                  .getText()
-                  .trim();
+    setStatus(
 
+      "❌ " +
+      (
+        error &&
+        error.name
+          ? error.name
+          : "ERROR"
+      ) +
+      " - " +
+      (
+        error &&
+        error.message
+          ? error.message
+          : ""
+      )
 
-              if(!resi){
+    );
 
-                return;
+  }
 
-              }
+}/* ==================================================
+   START SCANNER
+   KHUSUS BARCODE 1D MAWAR JAYA
+   ================================================== */
 
+async function startScanner(){
 
-              console.log(
-                "BARCODE:",
-                resi
-              );
+  try{
 
+    if(
+      typeof ZXingBrowser ===
+      "undefined"
+    ){
 
-              showResult(
-                resi
-              );
-
-
-              stopCamera();
-
-
-              /*
-               * Kirim hasil barcode
-               * kembali ke halaman
-               * Mawar Jaya Tracking
-               */
-
-              if(
-                window.opener
-              ){
-
-                window.opener.postMessage(
-
-                  {
-                    type:
-                      "MAWAR_JAYA_BARCODE",
-
-                    resi:
-                      resi
-
-                  },
-
-                  "*"
-
-                );
-
-              }
-
-
-              /*
-               * Tutup scanner
-               */
-
-              setTimeout(
-                function(){
-
-                  window.close();
-
-                },
-                700
-              );
-
-            }
-
-          );
-
-
-        setStatus(
-          "📷 Kamera aktif — arahkan ke barcode."
-        );
-
-      }
-      catch(error){
-
-        console.error(
-          "SCANNER ERROR:",
-          error
-        );
-
-
-        setStatus(
-
-          "❌ " +
-          error.name +
-          " - " +
-          error.message
-
-        );
-
-      }
+      throw new Error(
+        "ZXing tidak berhasil dimuat."
+      );
 
     }
 
+
+    setStatus(
+      "⏳ Menyiapkan kamera..."
+    );
+
+
+    /*
+     * Reader khusus barcode 1D
+     */
+
+    reader =
+      new ZXingBrowser
+        .BrowserMultiFormatOneDReader();
+
+
+    /*
+     * Constraint kamera
+     *
+     * Fokus continuous
+     * Resolusi tinggi
+     * Kamera belakang
+     */
+
+    const cameraConstraints = {
+
+      video:{
+
+        facingMode:{
+          ideal:
+            "environment"
+        },
+
+        width:{
+          ideal:1920
+        },
+
+        height:{
+          ideal:1080
+        },
+
+        frameRate:{
+          ideal:30,
+          max:60
+        },
+
+        focusMode:{
+          ideal:
+            "continuous"
+        }
+
+      }
+
+    };
+
+
+    /*
+     * Mulai scanner
+     */
+
+    controls =
+      await reader.decodeFromConstraints(
+
+        cameraConstraints,
+
+        "video",
+
+        function(
+          result,
+          error
+        ){
+
+          /*
+           * Tidak ada barcode
+           */
+
+          if(!result){
+
+            return;
+
+          }
+
+
+          /*
+           * Barcode berhasil dibaca
+           */
+
+          const resi =
+            result
+              .getText()
+              .trim();
+
+
+          if(!resi){
+
+            return;
+
+          }
+
+
+          console.log(
+            "BARCODE TERBACA:",
+            resi
+          );
+
+
+          /*
+           * Tampilkan hasil
+           */
+
+          showResult(
+            resi
+          );
+
+
+          setStatus(
+            "✅ Barcode berhasil dibaca."
+          );
+
+
+          /*
+           * Matikan kamera
+           */
+
+          stopCamera();
+
+
+          /*
+           * Kirim hasil ke
+           * halaman Tracking
+           */
+
+          if(
+            window.opener
+          ){
+
+            window.opener.postMessage(
+
+              {
+                type:
+                  "MAWAR_JAYA_BARCODE",
+
+                resi:
+                  resi
+
+              },
+
+              "*"
+
+            );
+
+          }
+
+
+          /*
+           * Tutup halaman scanner
+           */
+
+          setTimeout(
+            function(){
+
+              window.close();
+
+            },
+            700
+          );
+
+        }
+
+      );
+
+
+    setStatus(
+      "📷 Kamera aktif — arahkan barcode ke kotak."
+    );
+
+
+  }
+  catch(error){
+
+    console.error(
+      "SCANNER ERROR:",
+      error
+    );
+
+
+    setStatus(
+
+      "❌ " +
+      (
+        error &&
+        error.name
+          ? error.name
+          : "ERROR"
+      ) +
+      " - " +
+      (
+        error &&
+        error.message
+          ? error.message
+          : ""
+      )
+
+    );
+
+  }
+
+}
 
     /* ==================================================
        STOP CAMERA
