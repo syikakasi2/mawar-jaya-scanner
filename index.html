@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Mawar Jaya Barcode Scanner</title>
+
+  <script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    html,
+    body{
+
+      margin:0;
+      padding:0;
+
+      width:100%;
+      min-height:100%;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      background:#12395b;
+
+      color:#fff;
+
+    }
+
+
+    .app{
+
+      width:100%;
+      min-height:100vh;
+
+      display:flex;
+
+      flex-direction:column;
+
+      align-items:center;
+
+      padding:
+        50px
+        30px
+        70px;
+
+    }
+
+
+    .brand{
+
+      font-size:48px;
+
+      font-weight:900;
+
+      text-align:center;
+
+      margin-bottom:12px;
+
+    }
+
+
+    .subtitle{
+
+      font-size:26px;
+
+      font-weight:800;
+
+      text-align:center;
+
+      opacity:.9;
+
+      margin-bottom:40px;
+
+    }
+
+
+    .camera-box{
+
+      position:relative;
+
+      width:100%;
+
+      max-width:700px;
+
+      background:#000;
+
+      border-radius:32px;
+
+      overflow:hidden;
+
+      border:
+        5px
+        solid
+        rgba(255,255,255,.4);
+
+    }
+
+
+    #video{
+
+      display:block;
+
+      width:100%;
+
+      height:auto;
+
+      min-height:420px;
+
+      object-fit:cover;
+
+    }
+
+
+    .scan-frame{
+
+      position:absolute;
+
+      left:8%;
+
+      right:8%;
+
+      top:35%;
+
+      height:30%;
+
+      border:
+        5px
+        solid
+        #fff;
+
+      border-radius:18px;
+
+      pointer-events:none;
+
+    }
+
+
+    .instruction{
+
+      width:100%;
+
+      max-width:700px;
+
+      text-align:center;
+
+      font-size:30px;
+
+      font-weight:800;
+
+      line-height:1.4;
+
+      margin-top:35px;
+
+    }
+
+
+    .result{
+
+      width:100%;
+
+      max-width:700px;
+
+      margin-top:30px;
+
+      padding:30px;
+
+      background:#fff;
+
+      color:#12395b;
+
+      border-radius:28px;
+
+      text-align:center;
+
+      font-size:34px;
+
+      font-weight:900;
+
+      word-break:break-word;
+
+    }
+
+
+    .status{
+
+      width:100%;
+
+      max-width:700px;
+
+      text-align:center;
+
+      font-size:24px;
+
+      margin-top:25px;
+
+    }
+
+
+    .btn{
+
+      width:100%;
+
+      max-width:700px;
+
+      min-height:130px;
+
+      margin-top:30px;
+
+      border:0;
+
+      border-radius:28px;
+
+      font-size:38px;
+
+      font-weight:900;
+
+      cursor:pointer;
+
+    }
+
+
+    .btn-close{
+
+      background:#fff;
+
+      color:#12395b;
+
+    }
+
+
+    .hidden{
+
+      display:none!important;
+
+    }
+
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <div class="app">
+
+    <div class="brand">
+      MAWAR JAYA
+    </div>
+
+    <div class="subtitle">
+      BARCODE SCANNER
+    </div>
+
+
+    <div class="camera-box">
+
+      <video
+        id="video"
+        autoplay
+        muted
+        playsinline>
+      </video>
+
+      <div class="scan-frame"></div>
+
+    </div>
+
+
+    <div class="instruction">
+
+      Arahkan kamera ke barcode resi
+
+    </div>
+
+
+    <div
+      id="result"
+      class="result hidden">
+    </div>
+
+
+    <div
+      id="status"
+      class="status">
+
+      Memulai kamera...
+
+    </div>
+
+
+    <button
+      class="btn btn-close"
+      onclick="closeScanner()">
+
+      ✖ TUTUP SCANNER
+
+    </button>
+
+  </div>
+
+
+  <script>
+
+    let reader = null;
+
+    let controls = null;
+
+
+    /* ==================================================
+       START
+       ================================================== */
+
+    async function startScanner(){
+
+      try{
+
+        if(
+          typeof ZXingBrowser ===
+          "undefined"
+        ){
+
+          throw new Error(
+            "ZXing tidak berhasil dimuat."
+          );
+
+        }
+
+
+        setStatus(
+          "⏳ Meminta akses kamera..."
+        );
+
+
+        reader =
+          new ZXingBrowser.BrowserMultiFormatReader();
+
+
+        controls =
+          await reader.decodeFromConstraints(
+
+            {
+              video:{
+                facingMode:{
+                  ideal:
+                    "environment"
+                }
+              }
+            },
+
+            "video",
+
+            function(
+              result,
+              error
+            ){
+
+              if(!result){
+
+                return;
+
+              }
+
+
+              const resi =
+                result
+                  .getText()
+                  .trim();
+
+
+              if(!resi){
+
+                return;
+
+              }
+
+
+              console.log(
+                "BARCODE:",
+                resi
+              );
+
+
+              showResult(
+                resi
+              );
+
+
+              stopCamera();
+
+
+              /*
+               * Kirim hasil barcode
+               * kembali ke halaman
+               * Mawar Jaya Tracking
+               */
+
+              if(
+                window.opener
+              ){
+
+                window.opener.postMessage(
+
+                  {
+                    type:
+                      "MAWAR_JAYA_BARCODE",
+
+                    resi:
+                      resi
+
+                  },
+
+                  "*"
+
+                );
+
+              }
+
+
+              /*
+               * Tutup scanner
+               */
+
+              setTimeout(
+                function(){
+
+                  window.close();
+
+                },
+                700
+              );
+
+            }
+
+          );
+
+
+        setStatus(
+          "📷 Kamera aktif — arahkan ke barcode."
+        );
+
+      }
+      catch(error){
+
+        console.error(
+          "SCANNER ERROR:",
+          error
+        );
+
+
+        setStatus(
+
+          "❌ " +
+          error.name +
+          " - " +
+          error.message
+
+        );
+
+      }
+
+    }
+
+
+    /* ==================================================
+       STOP CAMERA
+       ================================================== */
+
+    function stopCamera(){
+
+      try{
+
+        if(
+          controls
+        ){
+
+          controls.stop();
+
+          controls =
+            null;
+
+        }
+
+      }
+      catch(error){
+
+        console.warn(
+          error
+        );
+
+      }
+
+
+      try{
+
+        if(
+          reader
+        ){
+
+          reader.reset();
+
+          reader =
+            null;
+
+        }
+
+      }
+      catch(error){
+
+        console.warn(
+          error
+        );
+
+      }
+
+
+      const video =
+        document.getElementById(
+          "video"
+        );
+
+
+      if(
+        video &&
+        video.srcObject
+      ){
+
+        video.srcObject
+          .getTracks()
+          .forEach(
+            function(track){
+
+              track.stop();
+
+            }
+          );
+
+        video.srcObject =
+          null;
+
+      }
+
+    }
+
+
+    /* ==================================================
+       CLOSE
+       ================================================== */
+
+    function closeScanner(){
+
+      stopCamera();
+
+      window.close();
+
+    }
+
+
+    /* ==================================================
+       RESULT
+       ================================================== */
+
+    function showResult(
+      resi
+    ){
+
+      const box =
+        document.getElementById(
+          "result"
+        );
+
+      box.textContent =
+        "RESI: " + resi;
+
+      box.classList.remove(
+        "hidden"
+      );
+
+    }
+
+
+    /* ==================================================
+       STATUS
+       ================================================== */
+
+    function setStatus(
+      text
+    ){
+
+      document.getElementById(
+        "status"
+      ).textContent =
+        text;
+
+    }
+
+
+    /* ==================================================
+       START WHEN PAGE READY
+       ================================================== */
+
+    window.addEventListener(
+      "load",
+      function(){
+
+        startScanner();
+
+      }
+    );
+
+  </script>
+
+</body>
+
+</html>
