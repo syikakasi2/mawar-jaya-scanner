@@ -390,6 +390,12 @@ async function startScanner(){
           max:60
         },
 
+        /*
+         * Permintaan autofocus.
+         * Kontrol utama dilakukan lewat
+         * applyContinuousFocus().
+         */
+
         focusMode:{
           ideal:
             "continuous"
@@ -514,6 +520,28 @@ async function startScanner(){
         }
 
       );
+
+
+    /*
+     * Terapkan autofocus setelah
+     * video stream benar-benar aktif.
+     */
+
+    await applyContinuousFocus();
+
+    /*
+     * Beberapa Android membutuhkan sedikit
+     * waktu sebelum focus control siap.
+     */
+
+    setTimeout(
+      function(){
+
+        applyContinuousFocus();
+
+      },
+      500
+    );
 
 
     setStatus(
@@ -616,6 +644,12 @@ async function startScanner(){
           max:60
         },
 
+        /*
+         * Permintaan autofocus.
+         * Kontrol utama dilakukan lewat
+         * applyContinuousFocus().
+         */
+
         focusMode:{
           ideal:
             "continuous"
@@ -742,6 +776,28 @@ async function startScanner(){
       );
 
 
+    /*
+     * Terapkan autofocus setelah
+     * video stream benar-benar aktif.
+     */
+
+    await applyContinuousFocus();
+
+    /*
+     * Beberapa Android membutuhkan sedikit
+     * waktu sebelum focus control siap.
+     */
+
+    setTimeout(
+      function(){
+
+        applyContinuousFocus();
+
+      },
+      500
+    );
+
+
     setStatus(
       "📷 Kamera aktif — arahkan barcode ke kotak."
     );
@@ -778,6 +834,91 @@ async function startScanner(){
   }
 
 }
+
+    /* ==================================================
+       AUTOFOCUS
+       ================================================== */
+
+    async function applyContinuousFocus(){
+
+      try{
+
+        const video =
+          document.getElementById("video");
+
+        if(
+          !video ||
+          !video.srcObject
+        ){
+
+          return;
+
+        }
+
+        const tracks =
+          video.srcObject.getVideoTracks();
+
+        if(
+          !tracks ||
+          !tracks.length
+        ){
+
+          return;
+
+        }
+
+        const track = tracks[0];
+
+        const capabilities =
+          track.getCapabilities
+            ? track.getCapabilities()
+            : {};
+
+        /*
+         * Paksa autofocus continuous
+         * jika kamera mendukungnya.
+         */
+
+        if(
+          capabilities.focusMode &&
+          capabilities.focusMode.includes("continuous")
+        ){
+
+          await track.applyConstraints({
+
+            advanced:[
+              {
+                focusMode:"continuous"
+              }
+            ]
+
+          });
+
+          console.log(
+            "AUTOFOCUS CONTINUOUS AKTIF"
+          );
+
+        }
+        else{
+
+          console.log(
+            "Kamera tidak expose focusMode continuous."
+          );
+
+        }
+
+      }
+      catch(error){
+
+        console.warn(
+          "AUTOFOCUS tidak dapat diterapkan:",
+          error
+        );
+
+      }
+
+    }
+
 
     /* ==================================================
        STOP CAMERA
