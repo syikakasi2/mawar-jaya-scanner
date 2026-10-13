@@ -390,12 +390,6 @@ async function startScanner(){
           max:60
         },
 
-        /*
-         * Permintaan autofocus.
-         * Kontrol utama dilakukan lewat
-         * applyContinuousFocus().
-         */
-
         focusMode:{
           ideal:
             "continuous"
@@ -522,27 +516,8 @@ async function startScanner(){
       );
 
 
-    /*
-     * Terapkan autofocus setelah
-     * video stream benar-benar aktif.
-     */
-
-    await applyContinuousFocus();
-
-    /*
-     * Beberapa Android membutuhkan sedikit
-     * waktu sebelum focus control siap.
-     */
-
-    setTimeout(
-      function(){
-
-        applyContinuousFocus();
-
-      },
-      500
-    );
-
+    // Terapkan autofocus setelah stream kamera benar-benar aktif.
+    await enableContinuousFocus();
 
     setStatus(
       "📷 Kamera aktif — arahkan barcode ke kotak."
@@ -584,343 +559,38 @@ async function startScanner(){
    KHUSUS BARCODE 1D MAWAR JAYA
    ================================================== */
 
-async function startScanner(){
-
-  try{
-
-    if(
-      typeof ZXingBrowser ===
-      "undefined"
-    ){
-
-      throw new Error(
-        "ZXing tidak berhasil dimuat."
-      );
-
-    }
-
-
-    setStatus(
-      "⏳ Menyiapkan kamera..."
-    );
-
-
-    /*
-     * Reader khusus barcode 1D
-     */
-
-    reader =
-      new ZXingBrowser
-        .BrowserMultiFormatOneDReader();
-
-
-    /*
-     * Constraint kamera
-     *
-     * Fokus continuous
-     * Resolusi tinggi
-     * Kamera belakang
-     */
-
-    const cameraConstraints = {
-
-      video:{
-
-        facingMode:{
-          ideal:
-            "environment"
-        },
-
-        width:{
-          ideal:1920
-        },
-
-        height:{
-          ideal:1080
-        },
-
-        frameRate:{
-          ideal:30,
-          max:60
-        },
-
-        /*
-         * Permintaan autofocus.
-         * Kontrol utama dilakukan lewat
-         * applyContinuousFocus().
-         */
-
-        focusMode:{
-          ideal:
-            "continuous"
-        }
-
-      }
-
-    };
-
-
-    /*
-     * Mulai scanner
-     */
-
-    controls =
-      await reader.decodeFromConstraints(
-
-        cameraConstraints,
-
-        "video",
-
-        function(
-          result,
-          error
-        ){
-
-          /*
-           * Tidak ada barcode
-           */
-
-          if(!result){
-
-            return;
-
-          }
-
-
-          /*
-           * Barcode berhasil dibaca
-           */
-
-          const resi =
-            result
-              .getText()
-              .trim();
-
-
-          if(!resi){
-
-            return;
-
-          }
-
-
-          console.log(
-            "BARCODE TERBACA:",
-            resi
-          );
-
-
-          /*
-           * Tampilkan hasil
-           */
-
-          showResult(
-            resi
-          );
-
-
-          setStatus(
-            "✅ Barcode berhasil dibaca."
-          );
-
-
-          /*
-           * Matikan kamera
-           */
-
-          stopCamera();
-
-
-          /*
-           * Kirim hasil ke
-           * halaman Tracking
-           */
-
-          if(
-            window.opener
-          ){
-
-            window.opener.postMessage(
-
-              {
-                type:
-                  "MAWAR_JAYA_BARCODE",
-
-                resi:
-                  resi
-
-              },
-
-              "*"
-
-            );
-
-          }
-
-
-          /*
-           * Tutup halaman scanner
-           */
-
-          setTimeout(
-            function(){
-
-              window.close();
-
-            },
-            700
-          );
-
-        }
-
-      );
-
-
-    /*
-     * Terapkan autofocus setelah
-     * video stream benar-benar aktif.
-     */
-
-    await applyContinuousFocus();
-
-    /*
-     * Beberapa Android membutuhkan sedikit
-     * waktu sebelum focus control siap.
-     */
-
-    setTimeout(
-      function(){
-
-        applyContinuousFocus();
-
-      },
-      500
-    );
-
-
-    setStatus(
-      "📷 Kamera aktif — arahkan barcode ke kotak."
-    );
-
-
-  }
-  catch(error){
-
-    console.error(
-      "SCANNER ERROR:",
-      error
-    );
-
-
-    setStatus(
-
-      "❌ " +
-      (
-        error &&
-        error.name
-          ? error.name
-          : "ERROR"
-      ) +
-      " - " +
-      (
-        error &&
-        error.message
-          ? error.message
-          : ""
-      )
-
-    );
-
-  }
-
-}
-
     /* ==================================================
-       AUTOFOCUS
+       AUTOFOCUS COMPATIBILITY
+       Coba continuous autofocus jika kamera/browser mendukungnya.
+       Jika tidak didukung, scanner tetap berjalan normal.
        ================================================== */
 
-    async function applyContinuousFocus(){
-
+    async function enableContinuousFocus(){
       try{
-
-        const video =
-          document.getElementById("video");
-
-        if(
-          !video ||
-          !video.srcObject
-        ){
-
+        const video = document.getElementById("video");
+        const stream = video && video.srcObject;
+        const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+        if(!track){
+          console.warn("Autofocus: video track belum tersedia.");
           return;
-
         }
-
-        const tracks =
-          video.srcObject.getVideoTracks();
-
-        if(
-          !tracks ||
-          !tracks.length
-        ){
-
-          return;
-
+        const capabilities = typeof track.getCapabilities === "function" ? track.getCapabilities() : {};
+        console.log("Kamera aktif:", track.label || "label tidak tersedia");
+        console.log("Pengaturan kamera:", track.getSettings ? track.getSettings() : {});
+        console.log("Mode fokus didukung:", capabilities.focusMode || "Tidak dilaporkan browser");
+        if(capabilities.focusMode && Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes("continuous") && typeof track.applyConstraints === "function"){
+          await track.applyConstraints({advanced:[{focusMode:"continuous"}]});
+          console.log("Permintaan autofocus continuous berhasil diterapkan.");
+        }else{
+          console.warn("Continuous autofocus tidak dilaporkan sebagai fitur yang didukung.");
         }
-
-        const track = tracks[0];
-
-        const capabilities =
-          track.getCapabilities
-            ? track.getCapabilities()
-            : {};
-
-        /*
-         * Paksa autofocus continuous
-         * jika kamera mendukungnya.
-         */
-
-        if(
-          capabilities.focusMode &&
-          capabilities.focusMode.includes("continuous")
-        ){
-
-          await track.applyConstraints({
-
-            advanced:[
-              {
-                focusMode:"continuous"
-              }
-            ]
-
-          });
-
-          console.log(
-            "AUTOFOCUS CONTINUOUS AKTIF"
-          );
-
-        }
-        else{
-
-          console.log(
-            "Kamera tidak expose focusMode continuous."
-          );
-
-        }
-
+      }catch(error){
+        console.warn("Autofocus tidak dapat diterapkan; scanner tetap berjalan:",error);
       }
-      catch(error){
-
-        console.warn(
-          "AUTOFOCUS tidak dapat diterapkan:",
-          error
-        );
-
-      }
-
     }
 
 
-    /* ==================================================
+/* ==================================================
        STOP CAMERA
        ================================================== */
 
